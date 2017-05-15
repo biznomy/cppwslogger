@@ -40,9 +40,9 @@
 #include "Poco/Util/HelpFormatter.h"
 
 #include <iostream>
-#include <fstream>
-#include <sstream>
-#include <iomanip>
+#include <stdexcept>
+#include <stdio.h>
+#include <string>
 
 using namespace std;
 
@@ -73,80 +73,34 @@ public:
 			_format(format) {
 	}
 
+	std::string exec(const char* cmd) {
+	    char buffer[128];
+	    std::string result = "";
+	    FILE* pipe = popen(cmd, "r");
+	    if (!pipe) throw std::runtime_error("popen() failed!");
+	    try {
+	        while (!feof(pipe)) {
+	            if (fgets(buffer, 128, pipe) != NULL)
+	                result += buffer;
+	        }
+	    } catch (...) {
+	        pclose(pipe);
+	        throw;
+	    }
+	    pclose(pipe);
+	    return result;
+	}
+
 	void handleRequest(HTTPServerRequest& request,
 			HTTPServerResponse& response) {
 		Application& app = Application::instance();
 		app.logger().information(
 				"Request from " + request.clientAddress().toString());
 
-		/*try{
-		 Poco::FileInputStream istr("/home/ubuntu/error.log");
-		 std::string read;
-		 istr >> read;
-		 std::cout << read << std::endl;
-
-		 }catch(Poco::Exception &e){
-		 std::cout << e.displayText() << std::endl;
-		 }*/
-
-		//read last line only
-		/*std::string result = "";
-		std::ifstream fin("/home/ubuntu/error.log");
-
-		if (fin.is_open()) {
-			fin.seekg(0, std::ios_base::end);      //Start at end of file
-			char ch = ' ';                        //Init ch not equal to '\n'
-			while (ch != '\n') {
-				fin.seekg(-2, std::ios_base::cur); //Two steps back, this means we
-												   //will NOT check the last character
-				if ((int) fin.tellg() <= 0) { //If passed the start of the file,
-					fin.seekg(0);                //this is the start of the line
-					break;
-				}
-				fin.get(ch);                      //Check the next character
-			}
-
-			std::getline(fin, result);
-			fin.close();
-
-			std::cout << "final line length: " << result.size() << std::endl;
-			std::cout << std::endl;
-			std::cout << "final line: " << result << std::endl;
-		}*/
 
 
-		const std::string filename = "/home/ubuntu/error.log";
-		  std::ifstream fs;
-		  fs.open(filename.c_str(), std::fstream::in);
-		  if(fs.is_open())
-		  {
-		    //Got to the last character before EOF
-		    fs.seekg(-1, std::ios_base::end);
-		    if(fs.peek() == '\n')
-		    {
-		      //Start searching for \n occurrences
-		      fs.seekg(-1, std::ios_base::cur);
-		      int i = fs.tellg();
-		      for(;i > 0; i--)
-		      {
-		        if(fs.peek() == '\n')
-		        {
-		          //Found
-		          fs.get();
-		          break;
-		        }
-		        //Move one character back
-		        fs.seekg(i, std::ios_base::beg);
-		      }
-		    }
-		    std::string lastline;
-		    getline(fs, lastline);
-		    std::cout << lastline << std::endl;
-		  }
-		  else
-		  {
-		    std::cout << "Could not find end line character" << std::endl;
-		  }
+		std::cout << exec("tail  /home/ubuntu/error.log") << std::endl;
+
 
 
 		Timestamp now;
