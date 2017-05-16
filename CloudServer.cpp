@@ -34,13 +34,12 @@
 #include "Poco/Util/OptionSet.h"
 #include "Poco/Util/HelpFormatter.h"
 #include "Poco/Format.h"
-#include <iostream>
-#include <iostream>
-#include <stdexcept>
-#include <stdio.h>
-#include <string>
 
 #define SAMPLE_INTERVAL  (1 * 1000 * 1000)
+
+#include <fstream>
+#include <limits>
+#include <iostream>
 
 using namespace std;
 using Poco::Net::ServerSocket;
@@ -117,24 +116,25 @@ class WebSocketRequestHandler: public HTTPRequestHandler
 {
 public:
 
-	std::string exec(const char* cmd) {
-		char buffer[128];
-		std::string result = "";
-		FILE* pipe = popen(cmd, "r");
-		if (!pipe)
-			throw std::runtime_error("popen() failed!");
-		try {
-			while (!feof(pipe)) {
-				if (fgets(buffer, 128, pipe) != NULL)
-					result += buffer;
-			}
-		} catch (...) {
-			pclose(pipe);
-			throw;
+	void loadFile(unsigned int start_poistion, const char* filepath) {
+		fstream file(filepath);
+
+		file.seekg(std::ios::beg);
+		unsigned int n = start_poistion;
+		unsigned int m = 10 + n;
+
+		for (unsigned int i = 0; i < n; ++i) {
+			file.ignore(i, '\n');
 		}
-		pclose(pipe);
-		return result;
+
+		string str;
+		while (std::getline(file, str) && (n < m)) {
+			cout << str << endl;
+			n++;
+		}
 	}
+
+
 
 	void handleRequest(HTTPServerRequest& request,
 			HTTPServerResponse& response) {
@@ -142,22 +142,23 @@ public:
 		try {
 			WebSocket ws(request, response);
 			app.logger().information("WebSocket connection established.");
+
 			char sndBuffer[4048];
 			int flags;
 			int n;
 
-			char buffer[4048];
-			memset(&buffer[0], 0, sizeof(buffer));
-			n = ws.receiveFrame(buffer, sizeof(buffer), flags);
-			std::string str(buffer);
-			std::cout << str << std::endl;
 			do {
-//				Poco::Timestamp now;
-//				long time_value = now.epochTime() * 1000;
+				char buffer[4048];
+				//Received Buffer
+				memset(&buffer[0], 0, sizeof(buffer));
+				n = ws.receiveFrame(buffer, sizeof(buffer), flags);
+				std::string str(buffer);
+				std::cout << str << std::endl;
+				loadFile(3, "/home/ubuntu/error.log");
 
-				std::string result = exec("tail  /home/ubuntu/error.log");
+				std::string result = "some response";
 				strcpy(sndBuffer, result.c_str());
-
+				//Send Buffer
 				ws.sendFrame(sndBuffer, sizeof(sndBuffer), flags);
 				usleep(SAMPLE_INTERVAL);
 			} while (n > 0
