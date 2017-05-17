@@ -136,14 +136,15 @@ public:
 			file.ignore(i, '\n');
 		}
 
+		jsonUtil.updateJson(json, "start", convertToString(start_poistion));
 		string str;
 		int count = n;
 		while (std::getline(file, str) && (n < m)) {
-			cout << str << endl;
 			jsonUtil.updateJson(json, convertToString(count), str);
 			count++;
 			n++;
 		}
+		jsonUtil.updateJson(json, "next", convertToString(count));
 	}
 
 
