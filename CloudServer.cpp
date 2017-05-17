@@ -156,9 +156,12 @@ public:
 			WebSocket ws(request, response);
 			app.logger().information("WebSocket connection established.");
 
-			char sndBuffer[4048];
 			int flags;
 			int n;
+
+			int start_point = 0;
+			std::string filepath = "/home/ubuntu/error.log";
+
 
 			do {
 				char buffer[4048];
@@ -166,9 +169,19 @@ public:
 				n = ws.receiveFrame(buffer, sizeof(buffer), flags);
 				std::string str(buffer);
 				std::cout << "Request : "<< str << std::endl;
+
+				if (!str.empty() && jsonUtil.parse(str)) {
+					start_point = jsonUtil.findIntVal(str, "start"); //warning no default value return
+					filepath =  jsonUtil.findStrVal(str, "path"); //warning no default value return
+				}
+
 				//main logic start
 				Poco::JSON::Object json;
-				loadFile(12, "/home/ubuntu/error.log", json);
+				loadFile(start_point, filepath.c_str(), json);
+
+				char sndBuffer[4048];
+				memset(&sndBuffer[0], 0, sizeof(sndBuffer));
+
 				strcpy(sndBuffer, jsonUtil.createJsonString(json).c_str());
 				//main logic end
 				ws.sendFrame(sndBuffer, sizeof(sndBuffer), flags);

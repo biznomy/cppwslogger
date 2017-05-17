@@ -27,11 +27,15 @@ public:
 
 	virtual ~JSONUtil();
 
-// remain
 	void updateJson(Object& obj, std::string key, std::string value);
 
-// remain
 	std::string createJsonString(Object obj);
+
+	bool parse(std::string& stringVal);
+
+	std::string findStrVal(std::string& json, const std::string& name);
+
+	int findIntVal(std::string& json, const std::string& name);
 
 };
 
