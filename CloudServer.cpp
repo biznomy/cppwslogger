@@ -18,7 +18,7 @@
 //
 // SPDX-License-Identifier:	BSL-1.0
 //
-
+#define SAMPLE_INTERVAL  (1 * 1000 * 1000)
 #include "Poco/Net/HTTPServer.h"
 #include "Poco/Net/HTTPRequestHandler.h"
 #include "Poco/Net/HTTPRequestHandlerFactory.h"
@@ -34,12 +34,13 @@
 #include "Poco/Util/OptionSet.h"
 #include "Poco/Util/HelpFormatter.h"
 #include "Poco/Format.h"
-
-#define SAMPLE_INTERVAL  (1 * 1000 * 1000)
-
+//Custom
+#include "JSONUtil.hpp"
 #include <fstream>
+#include <cstring>
 #include <limits>
 #include <iostream>
+#include <sstream>
 
 using namespace std;
 using Poco::Net::ServerSocket;
@@ -114,9 +115,17 @@ public:
 class WebSocketRequestHandler: public HTTPRequestHandler
 /// Handle a WebSocket connection.
 {
+private :
+	JSONUtil jsonUtil;
 public:
 
-	void loadFile(unsigned int start_poistion, const char* filepath) {
+	std::string convertToString(int x){
+		ostringstream temp;  //temp as in temporary
+		temp << x;
+		return temp.str();
+	}
+
+	void loadFile(unsigned int start_poistion, const char* filepath, Poco::JSON::Object &json) {
 		fstream file(filepath);
 
 		file.seekg(std::ios::beg);
@@ -128,8 +137,11 @@ public:
 		}
 
 		string str;
+		int count = n;
 		while (std::getline(file, str) && (n < m)) {
 			cout << str << endl;
+			jsonUtil.updateJson(json, convertToString(count), str);
+			count++;
 			n++;
 		}
 	}
@@ -149,16 +161,15 @@ public:
 
 			do {
 				char buffer[4048];
-				//Received Buffer
 				memset(&buffer[0], 0, sizeof(buffer));
 				n = ws.receiveFrame(buffer, sizeof(buffer), flags);
 				std::string str(buffer);
-				std::cout << str << std::endl;
-				loadFile(3, "/home/ubuntu/error.log");
-
-				std::string result = "some response";
-				strcpy(sndBuffer, result.c_str());
-				//Send Buffer
+				std::cout << "Request : "<< str << std::endl;
+				//main logic start
+				Poco::JSON::Object json;
+				loadFile(12, "/home/ubuntu/error.log", json);
+				strcpy(sndBuffer, jsonUtil.createJsonString(json).c_str());
+				//main logic end
 				ws.sendFrame(sndBuffer, sizeof(sndBuffer), flags);
 				usleep(SAMPLE_INTERVAL);
 			} while (n > 0

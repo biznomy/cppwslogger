@@ -3,12 +3,13 @@ CXXFLAGS =	-O2 -g -Wall -fmessage-length=0
 export LD_LIBRARY_PATH=/usr/local/include/Poco
 BINDIR = ./bin
 
-OBJS =		CloudServer.o
+OBJS =		CloudServer.o JSONUtil.o
 
 LIBS = -I poco/ -L poco/lib/Linux/x86_64 \
 	-lPocoFoundation \
 	-lPocoUtil \
-	-lPocoNet
+	-lPocoNet \
+	-lPocoJSON
 
 
 
